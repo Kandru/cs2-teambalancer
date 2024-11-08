@@ -16,7 +16,6 @@ namespace TeamBalancer
         {
             // initialize configuration
             LoadConfig();
-            UpdateConfig();
             SaveConfig();
             // print message if hot reload
             if (hotReload)

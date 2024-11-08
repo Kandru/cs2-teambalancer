@@ -7,7 +7,7 @@ namespace TeamBalancer
     {
         public override string ModuleName => "Team Balancer";
         public override string ModuleAuthor => "Jon-Mailes Graeffe <mail@jonni.it> / Kalle <kalle@kandru.de>";
-        public override string ModuleVersion => "0.0.3";
+        public override string ModuleVersion => "0.0.4";
 
         public override void Load(bool hotReload)
         {
@@ -32,6 +32,8 @@ namespace TeamBalancer
         {
             var player = @event.Userid;
             if (player == null
+                || !player.IsValid
+                || player.IsBot
                 || @event.Team == (byte)CsTeam.Spectator
                 || @event.Team == (byte)CsTeam.None) return HookResult.Continue;
             // get initial data
@@ -39,11 +41,11 @@ namespace TeamBalancer
             int score_ct = GetTeamScore(CsTeam.CounterTerrorist);
             var (count_t, count_ct) = CountActivePlayers();
             // substract counter depending on team to match current players per team (because this is a Hook)
-            if (@event.Team == (byte)CsTeam.Terrorist)
+            if (@event.Oldteam == (byte)CsTeam.Terrorist)
             {
                 count_t -= 1;
             }
-            else if (@event.Team == (byte)CsTeam.CounterTerrorist)
+            else if (@event.Oldteam == (byte)CsTeam.CounterTerrorist)
             {
                 count_ct -= 1;
             }
@@ -52,21 +54,31 @@ namespace TeamBalancer
                 && count_ct <= count_t
                 && score_t - score_ct >= 2)
             {
-                player.ChangeTeam(CsTeam.CounterTerrorist);
+                AddTimer(0f, () =>
+                {
+                    if (player == null || !player.IsValid) return;
+                    player.ChangeTeam(CsTeam.CounterTerrorist);
+                    var @tmpEvent = new EventNextlevelChanged(true);
+                    @tmpEvent.FireEvent(false);
+                });
                 // inform players
                 player.PrintToCenterAlert(Localizer["switch.to_ct_center"].Value
                     .Replace("{player}", player.PlayerName));
                 SendGlobalChatMessage(Localizer["switch.to_ct_chat"].Value
                     .Replace("{player}", player.PlayerName));
                 // update scoreboard
-                var @tmpEvent = new EventNextlevelChanged(true);
-                @tmpEvent.FireEvent(false);
             }
             else if (@event.Team == (byte)CsTeam.CounterTerrorist
                         && count_t <= count_ct
                         && score_ct - score_t >= 2)
             {
-                player.ChangeTeam(CsTeam.Terrorist);
+                AddTimer(0f, () =>
+                {
+                    if (player == null || !player.IsValid) return;
+                    player.ChangeTeam(CsTeam.Terrorist);
+                    var @tmpEvent = new EventNextlevelChanged(true);
+                    @tmpEvent.FireEvent(false);
+                });
                 // inform players
                 player.PrintToCenterAlert(Localizer["switch.to_t_center"].Value
                     .Replace("{player}", player.PlayerName));

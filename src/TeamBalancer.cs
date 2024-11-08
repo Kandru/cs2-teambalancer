@@ -53,20 +53,28 @@ namespace TeamBalancer
                 && score_t - score_ct >= 2)
             {
                 player.ChangeTeam(CsTeam.CounterTerrorist);
+                // inform players
                 player.PrintToCenterAlert(Localizer["switch.to_ct_center"].Value
                     .Replace("{player}", player.PlayerName));
                 SendGlobalChatMessage(Localizer["switch.to_ct_chat"].Value
                     .Replace("{player}", player.PlayerName));
+                // update scoreboard
+                var @tmpEvent = new EventNextlevelChanged(true);
+                @tmpEvent.FireEvent(false);
             }
             else if (@event.Team == (byte)CsTeam.CounterTerrorist
                         && count_t <= count_ct
                         && score_ct - score_t >= 2)
             {
                 player.ChangeTeam(CsTeam.Terrorist);
+                // inform players
                 player.PrintToCenterAlert(Localizer["switch.to_t_center"].Value
                     .Replace("{player}", player.PlayerName));
                 SendGlobalChatMessage(Localizer["switch.to_t_chat"].Value
                     .Replace("{player}", player.PlayerName));
+                // update scoreboard
+                var @tmpEvent = new EventNextlevelChanged(true);
+                @tmpEvent.FireEvent(false);
             }
             return HookResult.Continue;
         }

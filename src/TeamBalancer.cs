@@ -1,7 +1,5 @@
-﻿using CounterStrikeSharp.API;
-using CounterStrikeSharp.API.Core;
+﻿using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Modules.Utils;
-using System.IO.Compression;
 
 namespace TeamBalancer
 {
@@ -9,13 +7,15 @@ namespace TeamBalancer
     {
         public override string ModuleName => "Team Balancer";
         public override string ModuleAuthor => "Jon-Mailes Graeffe <mail@jonni.it> / Kalle <kalle@kandru.de>";
-        public override string ModuleVersion => "0.0.1";
+        public override string ModuleVersion => "0.0.2";
 
         public override void Load(bool hotReload)
         {
             // initialize configuration
             LoadConfig();
             SaveConfig();
+            // create listeners
+            RegisterEventHandler<EventPlayerTeam>(OnPlayerTeam);
             // print message if hot reload
             if (hotReload)
             {
@@ -28,22 +28,49 @@ namespace TeamBalancer
             Console.WriteLine(Localizer["core.unload"]);
         }
 
-        public Tuple<int, int> CountActivePlayers()
+        public HookResult OnPlayerTeam(EventPlayerTeam @event, GameEventInfo info)
         {
-            int count_t = 0;
-            int count_ct = 0;
-            foreach (CCSPlayerController player in Utilities.GetPlayers())
+            var player = @event.Userid;
+            if (player == null
+                || @event.Team == (byte)CsTeam.Spectator
+                || @event.Team == (byte)CsTeam.None) return HookResult.Continue;
+            // get initial data
+            int score_t = GetTeamScore(CsTeam.Terrorist);
+            int score_ct = GetTeamScore(CsTeam.CounterTerrorist);
+            var (count_t, count_ct) = CountActivePlayers();
+            // substract counter depending on team to match current players per team (because this is a Hook)
+            if (@event.Team == (byte)CsTeam.Terrorist)
             {
-                if (player.Team == CsTeam.CounterTerrorist)
-                {
-                    count_ct++;
-                }
-                else if (player.Team == CsTeam.Terrorist)
-                {
-                    count_t++;
-                }
+                count_t -= 1;
             }
-            return Tuple.Create(count_t, count_ct);
+            else if (@event.Team == (byte)CsTeam.CounterTerrorist)
+            {
+                count_ct -= 1;
+            }
+            // check if player should be switched to CT (if T) or vice versa
+            if (@event.Team == (byte)CsTeam.Terrorist
+                && count_ct <= count_t
+                && score_t - score_ct >= 2)
+            {
+                player.ChangeTeam(CsTeam.CounterTerrorist);
+                player.PrintToCenterAlert(Localizer["switch.to_ct_center"].Value
+                    .Replace("{player}", player.PlayerName));
+                SendGlobalChatMessage(Localizer["switch.to_ct_chat"].Value
+                    .Replace("{player}", player.PlayerName));
+            }
+            else if (@event.Team == (byte)CsTeam.CounterTerrorist
+                        && count_t <= count_ct
+                        && score_ct - score_t >= 2)
+            {
+                player.ChangeTeam(CsTeam.Terrorist);
+                player.PrintToCenterAlert(Localizer["switch.to_t_center"].Value
+                    .Replace("{player}", player.PlayerName));
+                SendGlobalChatMessage(Localizer["switch.to_t_chat"].Value
+                    .Replace("{player}", player.PlayerName));
+            }
+            return HookResult.Continue;
         }
+
+
     }
 }

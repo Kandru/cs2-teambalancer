@@ -1,5 +1,9 @@
 {
     "core.hotreload": "[TeamBalancer] Hot-Reloaded Plugin!",
     "core.unload": "[TeamBalancer] Unloaded Plugin!",
-    "config.loaded": "[TeamBalancer] Loaded configuration!"
+    "config.loaded": "[TeamBalancer] Loaded configuration!",
+    "switch.to_t_center": "You joined the Terrorist Team!",
+    "switch.to_t_chat": "{magenta}[TeamBalancer] {default}switched {green}{player} {default}to {green}Terrorists{default}!",
+    "switch.to_ct_center": "You joined the CounterTerrorist Team!",
+    "switch.to_ct_chat": "{magenta}[TeamBalancer] {default}switched {green}{player} {default}to {green}CounterTerrorists{default}!"
 }

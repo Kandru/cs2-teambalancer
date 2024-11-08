@@ -1,5 +1,9 @@
 {
-    "core.hotreload": "[TeamBalancer] Neu geladen!",
-    "core.unload": "[TeamBalancer] Plugin entladen!",
-    "config.loaded": "[TeamBalancer] Konfiguration geladen!"
+    "core.hotreload": "[Teamausgleich] Neu geladen!",
+    "core.unload": "[Teamausgleich] Plugin entladen!",
+    "config.loaded": "[Teamausgleich] Konfiguration geladen!",
+    "switch.to_t_center": "Du bist nun im Terroristen-Team!",
+    "switch.to_t_chat": "{magenta}[Teamausgleich] {default}bewegte {green}{player} {default}zu den {green}Terroristen{default}!",
+    "switch.to_ct_center": "Du bist nun im Antiterroristen-Team!",
+    "switch.to_ct_chat": "{magenta}[Teamausgleich] {default}bewegte {green}{player} {default}zu den {green}Antiterroristen{default}!"
 }

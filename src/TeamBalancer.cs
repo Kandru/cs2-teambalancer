@@ -1,8 +1,7 @@
 ﻿using CounterStrikeSharp.API;
 using CounterStrikeSharp.API.Core;
+using CounterStrikeSharp.API.Modules.Utils;
 using System.IO.Compression;
-using System.Text.Json;
-using System.Text.Json.Serialization;
 
 namespace TeamBalancer
 {
@@ -27,6 +26,24 @@ namespace TeamBalancer
         public override void Unload(bool hotReload)
         {
             Console.WriteLine(Localizer["core.unload"]);
+        }
+
+        public Tuple<int, int> CountActivePlayers()
+        {
+            int count_t = 0;
+            int count_ct = 0;
+            foreach (CCSPlayerController player in Utilities.GetPlayers())
+            {
+                if (player.Team == CsTeam.CounterTerrorist)
+                {
+                    count_ct++;
+                }
+                else if (player.Team == CsTeam.Terrorist)
+                {
+                    count_t++;
+                }
+            }
+            return Tuple.Create(count_t, count_ct);
         }
     }
 }

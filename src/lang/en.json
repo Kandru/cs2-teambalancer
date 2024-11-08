@@ -1,0 +1,5 @@
+{
+    "core.hotreload": "[TeamBalancer] Hot-Reloaded Plugin!",
+    "core.unload": "[TeamBalancer] Unloaded Plugin!",
+    "config.loaded": "[TeamBalancer] Loaded configuration!"
+}

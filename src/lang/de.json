@@ -1,0 +1,5 @@
+{
+    "core.hotreload": "[TeamBalancer] Neu geladen!",
+    "core.unload": "[TeamBalancer] Plugin entladen!",
+    "config.loaded": "[TeamBalancer] Konfiguration geladen!"
+}

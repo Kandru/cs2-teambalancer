@@ -7,7 +7,7 @@ namespace TeamBalancer
     {
         public override string ModuleName => "Team Balancer";
         public override string ModuleAuthor => "Jon-Mailes Graeffe <mail@jonni.it> / Kalle <kalle@kandru.de>";
-        public override string ModuleVersion => "0.0.4";
+        public override string ModuleVersion => "0.0.5";
 
         private bool _halfTime = true;
 

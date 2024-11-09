@@ -9,7 +9,7 @@ namespace TeamBalancer
         public override string ModuleAuthor => "Jon-Mailes Graeffe <mail@jonni.it> / Kalle <kalle@kandru.de>";
         public override string ModuleVersion => "0.0.4";
 
-        private bool _enabled = true;
+        private bool _halfTime = true;
 
         public override void Load(bool hotReload)
         {
@@ -33,13 +33,14 @@ namespace TeamBalancer
 
         public HookResult OnPlayerTeam(EventPlayerTeam @event, GameEventInfo info)
         {
-            if (!_enabled) return HookResult.Continue;
             var player = @event.Userid;
             if (player == null
                 || !player.IsValid
                 || player.IsBot
                 || @event.Team == (byte)CsTeam.Spectator
-                || @event.Team == (byte)CsTeam.None) return HookResult.Continue;
+                || @event.Team == (byte)CsTeam.None
+                || (_halfTime == true && @event.Oldteam != (byte)CsTeam.Spectator)
+                || (_halfTime == true && @event.Oldteam != (byte)CsTeam.None)) return HookResult.Continue;
             // get initial data
             int score_t = GetTeamScore(CsTeam.Terrorist);
             int score_ct = GetTeamScore(CsTeam.CounterTerrorist);
@@ -97,9 +98,9 @@ namespace TeamBalancer
 
         public HookResult OnStartHalftime(EventStartHalftime @event, GameEventInfo info)
         {
-            _enabled = false;
+            _halfTime = false;
             AddTimer(5f, ()=>{
-                _enabled = true;
+                _halfTime = true;
             });
             return HookResult.Continue;
         }

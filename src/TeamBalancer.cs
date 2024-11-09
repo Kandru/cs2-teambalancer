@@ -9,6 +9,8 @@ namespace TeamBalancer
         public override string ModuleAuthor => "Jon-Mailes Graeffe <mail@jonni.it> / Kalle <kalle@kandru.de>";
         public override string ModuleVersion => "0.0.4";
 
+        private bool _enabled = true;
+
         public override void Load(bool hotReload)
         {
             // initialize configuration
@@ -16,6 +18,7 @@ namespace TeamBalancer
             SaveConfig();
             // create listeners
             RegisterEventHandler<EventPlayerTeam>(OnPlayerTeam);
+            RegisterEventHandler<EventStartHalftime>(OnStartHalftime);
             // print message if hot reload
             if (hotReload)
             {
@@ -30,6 +33,7 @@ namespace TeamBalancer
 
         public HookResult OnPlayerTeam(EventPlayerTeam @event, GameEventInfo info)
         {
+            if (!_enabled) return HookResult.Continue;
             var player = @event.Userid;
             if (player == null
                 || !player.IsValid
@@ -91,6 +95,13 @@ namespace TeamBalancer
             return HookResult.Continue;
         }
 
-
+        public HookResult OnStartHalftime(EventStartHalftime @event, GameEventInfo info)
+        {
+            _enabled = false;
+            AddTimer(5f, ()=>{
+                _enabled = true;
+            });
+            return HookResult.Continue;
+        }
     }
 }

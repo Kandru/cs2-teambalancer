@@ -17,7 +17,7 @@ namespace TeamBalancer
             SaveConfig();
             // create listeners
             RegisterEventHandler<EventPlayerTeam>(OnPlayerTeam);
-            RegisterEventHandler<EventStartHalftime>(OnStartHalftime);
+            RegisterEventHandler<EventAnnouncePhaseEnd>(OnAnnouncePhaseEnd);
             // print message if hot reload
             if (hotReload)
             {
@@ -95,10 +95,16 @@ namespace TeamBalancer
             return HookResult.Continue;
         }
 
-        public HookResult OnStartHalftime(EventStartHalftime @event, GameEventInfo info)
+        public HookResult OnAnnouncePhaseEnd(EventAnnouncePhaseEnd @event, GameEventInfo info)
         {
-            _halfTime = true;
-            AddTimer(10f, () =>
+            // half time seems to occure exactly 5 seconds after this event.
+            // enable half time fix
+            AddTimer(4f, () =>
+            {
+                _halfTime = true;
+            });
+            // disable half time fix
+            AddTimer(6f, () =>
             {
                 _halfTime = false;
             });

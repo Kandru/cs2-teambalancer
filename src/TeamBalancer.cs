@@ -8,7 +8,7 @@ namespace TeamBalancer
         public override string ModuleName => "Team Balancer";
         public override string ModuleAuthor => "Jon-Mailes Graeffe <mail@jonni.it> / Kalle <kalle@kandru.de>";
 
-        private bool _halfTime = true;
+        private bool _halfTime = false;
 
         public override void Load(bool hotReload)
         {
@@ -97,9 +97,10 @@ namespace TeamBalancer
 
         public HookResult OnStartHalftime(EventStartHalftime @event, GameEventInfo info)
         {
-            _halfTime = false;
-            AddTimer(5f, ()=>{
-                _halfTime = true;
+            _halfTime = true;
+            AddTimer(5f, () =>
+            {
+                _halfTime = false;
             });
             return HookResult.Continue;
         }

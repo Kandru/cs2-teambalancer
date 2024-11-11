@@ -98,7 +98,7 @@ namespace TeamBalancer
         public HookResult OnStartHalftime(EventStartHalftime @event, GameEventInfo info)
         {
             _halfTime = true;
-            AddTimer(5f, () =>
+            AddTimer(10f, () =>
             {
                 _halfTime = false;
             });

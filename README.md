@@ -1,9 +1,10 @@
 # CounterstrikeSharp - Team Balancer
 
-[![UpdateManager Compatible](https://img.shields.io/badge/CS2-UpdateManager-darkgreen)](https://github.com/Kandru/cs2-teambalancer/)
+[![UpdateManager Compatible](https://img.shields.io/badge/CS2-UpdateManager-darkgreen)](https://github.com/Kandru/cs2-update-manager/)
 [![GitHub release](https://img.shields.io/github/release/Kandru/cs2-teambalancer?include_prereleases=&sort=semver&color=blue)](https://github.com/Kandru/cs2-teambalancer/releases/)
 [![License](https://img.shields.io/badge/License-GPLv3-blue)](#license)
 [![issues - cs2-map-modifier](https://img.shields.io/github/issues/Kandru/cs2-teambalancer)](https://github.com/Kandru/cs2-teambalancer/issues)
+[![](https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif)](https://www.paypal.com/donate/?hosted_button_id=C2AVYKGVP9TRG)
 
 TODO
 

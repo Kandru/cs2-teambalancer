@@ -1,5 +1,6 @@
 ﻿using CounterStrikeSharp.API;
 using CounterStrikeSharp.API.Core;
+using CounterStrikeSharp.API.Modules.Cvars;
 using CounterStrikeSharp.API.Modules.Utils;
 
 namespace TeamBalancer
@@ -39,8 +40,7 @@ namespace TeamBalancer
                 || player.IsBot
                 || @event.Team == (byte)CsTeam.Spectator
                 || @event.Team == (byte)CsTeam.None
-                || (_halfTime == true && @event.Oldteam != (byte)CsTeam.Spectator)
-                || (_halfTime == true && @event.Oldteam != (byte)CsTeam.None)) return HookResult.Continue;
+                || (_halfTime == true && @event.Oldteam != (byte)CsTeam.Spectator && @event.Oldteam != (byte)CsTeam.None)) return HookResult.Continue;
             // get initial data
             int score_t = GetTeamScore(CsTeam.Terrorist);
             int score_ct = GetTeamScore(CsTeam.CounterTerrorist);
@@ -98,17 +98,39 @@ namespace TeamBalancer
 
         public HookResult OnAnnouncePhaseEnd(EventAnnouncePhaseEnd @event, GameEventInfo info)
         {
-            // half time seems to occure exactly 5 seconds after this event.
-            // enable half time fix
-            AddTimer(4f, () =>
+            _halfTime = true;
+            // check for half time player swap and ignore teamswap
+            ConVar? mpTeamIntroTime = ConVar.Find("mp_team_intro_time");
+            // disable after mpTeamIntroTime finished
+            if (mpTeamIntroTime != null && mpTeamIntroTime.GetPrimitiveValue<float>() > 0.0f)
             {
-                _halfTime = true;
-            });
-            // disable half time fix
-            AddTimer(6f, () =>
+                mpTeamIntroTime.GetPrimitiveValue<float>();
+                // disable half time
+                AddTimer(mpTeamIntroTime.GetPrimitiveValue<float>() + 0.5f, () =>
+                {
+                    _halfTime = false;
+                });
+            }
+            else
             {
-                _halfTime = false;
-            });
+                ConVar? mpHalfTimeDuration = ConVar.Find("mp_halftime_duration");
+                if (mpHalfTimeDuration != null && mpHalfTimeDuration.GetPrimitiveValue<float>() > 0.0f)
+                {
+                    // disable half time
+                    AddTimer(mpHalfTimeDuration.GetPrimitiveValue<float>() + 0.5f, () =>
+                    {
+                        _halfTime = false;
+                    });
+                }
+                else
+                {
+                    // disable half time
+                    AddTimer(1f, () =>
+                    {
+                        _halfTime = false;
+                    });
+                }
+            }
             return HookResult.Continue;
         }
     }

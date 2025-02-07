@@ -1,4 +1,5 @@
-﻿using CounterStrikeSharp.API.Core;
+﻿using CounterStrikeSharp.API;
+using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Modules.Utils;
 
 namespace TeamBalancer
@@ -58,7 +59,7 @@ namespace TeamBalancer
                 && count_ct <= count_t
                 && score_t - score_ct >= 2)
             {
-                AddTimer(0f, () =>
+                Server.NextFrame(() =>
                 {
                     if (player == null || !player.IsValid) return;
                     player.ChangeTeam(CsTeam.CounterTerrorist);
@@ -76,7 +77,7 @@ namespace TeamBalancer
                         && count_t <= count_ct
                         && score_ct - score_t >= 2)
             {
-                AddTimer(0f, () =>
+                Server.NextFrame(() =>
                 {
                     if (player == null || !player.IsValid) return;
                     player.ChangeTeam(CsTeam.Terrorist);

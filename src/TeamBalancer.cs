@@ -1,6 +1,7 @@
 ﻿using CounterStrikeSharp.API;
 using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Modules.Cvars;
+using CounterStrikeSharp.API.Modules.Extensions;
 using CounterStrikeSharp.API.Modules.Utils;
 
 namespace TeamBalancer
@@ -14,9 +15,8 @@ namespace TeamBalancer
 
         public override void Load(bool hotReload)
         {
-            // initialize configuration
-            LoadConfig();
-            SaveConfig();
+            // update configuration on disk to reflect latest changes from plugin
+            Config.Update();
             // create listeners
             RegisterListener<Listeners.OnMapStart>(OnMapStart);
             RegisterEventHandler<EventPlayerTeam>(OnPlayerTeam);

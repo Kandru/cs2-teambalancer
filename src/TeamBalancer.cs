@@ -1,7 +1,6 @@
 ﻿using CounterStrikeSharp.API;
 using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Modules.Cvars;
-using CounterStrikeSharp.API.Modules.Entities;
 using CounterStrikeSharp.API.Modules.Utils;
 
 namespace TeamBalancer
@@ -44,8 +43,11 @@ namespace TeamBalancer
             {
                 // disable autoteambalance to make this plugin work
                 Server.ExecuteCommand("mp_autoteambalance 0");
-                // disable limitteams
-                Server.ExecuteCommand($"mp_limitteams 0");
+                // disable limitteams by taking into account the bot change behaviour when value = 0
+                if (Config.IgnoreBots)
+                    Server.ExecuteCommand($"mp_limitteams 0");
+                else
+                    Server.ExecuteCommand($"mp_limitteams 99");
             });
         }
 

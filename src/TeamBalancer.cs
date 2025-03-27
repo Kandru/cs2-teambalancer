@@ -19,6 +19,7 @@ namespace TeamBalancer
             Config.Update();
             // create listeners
             RegisterListener<Listeners.OnMapStart>(OnMapStart);
+            RegisterListener<Listeners.OnServerHibernationUpdate>(OnServerHibernationUpdate);
             RegisterEventHandler<EventPlayerTeam>(OnPlayerTeam);
             RegisterEventHandler<EventAnnouncePhaseEnd>(OnAnnouncePhaseEnd);
             // print message if hot reload
@@ -32,6 +33,7 @@ namespace TeamBalancer
         {
             // remove listeners
             RemoveListener<Listeners.OnMapStart>(OnMapStart);
+            RemoveListener<Listeners.OnServerHibernationUpdate>(OnServerHibernationUpdate);
             DeregisterEventHandler<EventPlayerTeam>(OnPlayerTeam);
             DeregisterEventHandler<EventAnnouncePhaseEnd>(OnAnnouncePhaseEnd);
             Console.WriteLine(Localizer["core.unload"]);
@@ -39,16 +41,15 @@ namespace TeamBalancer
 
         public void OnMapStart(string mapName)
         {
-            AddTimer(3f, () =>
+            AddTimer(3f, () => SetServerCvars());
+        }
+
+        public void OnServerHibernationUpdate(bool hibernating)
+        {
+            if (!hibernating)
             {
-                // disable autoteambalance to make this plugin work
-                Server.ExecuteCommand("mp_autoteambalance 0");
-                // disable limitteams by taking into account the bot change behaviour when value = 0
-                if (Config.IgnoreBots)
-                    Server.ExecuteCommand($"mp_limitteams 0");
-                else
-                    Server.ExecuteCommand($"mp_limitteams 99");
-            });
+                AddTimer(3f, () => SetServerCvars());
+            }
         }
 
         public HookResult OnPlayerTeam(EventPlayerTeam @event, GameEventInfo info)
@@ -81,6 +82,17 @@ namespace TeamBalancer
                 if (@event.Team != (int)CsTeam.Terrorist) SwitchPlayerTeam(player, CsTeam.Terrorist);
             }
             return HookResult.Continue;
+        }
+
+        private void SetServerCvars()
+        {
+            // disable autoteambalance to make this plugin work
+            Server.ExecuteCommand("mp_autoteambalance 0");
+            // disable limitteams by taking into account the bot change behaviour when value = 0
+            if (Config.IgnoreBots)
+                Server.ExecuteCommand($"mp_limitteams 0");
+            else
+                Server.ExecuteCommand($"mp_limitteams 99");
         }
 
         private bool IsAllowedToSwitchToTeam(int targetCount, int sourceCount, int sourceScore, int targetScore)

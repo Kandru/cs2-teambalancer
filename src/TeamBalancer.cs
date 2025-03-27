@@ -1,6 +1,7 @@
 ﻿using CounterStrikeSharp.API;
 using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Modules.Cvars;
+using CounterStrikeSharp.API.Modules.Entities;
 using CounterStrikeSharp.API.Modules.Utils;
 
 namespace TeamBalancer
@@ -18,6 +19,7 @@ namespace TeamBalancer
             LoadConfig();
             SaveConfig();
             // create listeners
+            RegisterListener<Listeners.OnMapStart>(OnMapStart);
             RegisterEventHandler<EventPlayerTeam>(OnPlayerTeam);
             RegisterEventHandler<EventAnnouncePhaseEnd>(OnAnnouncePhaseEnd);
             // print message if hot reload
@@ -29,7 +31,22 @@ namespace TeamBalancer
 
         public override void Unload(bool hotReload)
         {
+            // remove listeners
+            RemoveListener<Listeners.OnMapStart>(OnMapStart);
+            DeregisterEventHandler<EventPlayerTeam>(OnPlayerTeam);
+            DeregisterEventHandler<EventAnnouncePhaseEnd>(OnAnnouncePhaseEnd);
             Console.WriteLine(Localizer["core.unload"]);
+        }
+
+        public void OnMapStart(string mapName)
+        {
+            AddTimer(3f, () =>
+            {
+                // disable autoteambalance to make this plugin work
+                Server.ExecuteCommand("mp_autoteambalance 0");
+                // disable limitteams
+                Server.ExecuteCommand($"mp_limitteams 0");
+            });
         }
 
         public HookResult OnPlayerTeam(EventPlayerTeam @event, GameEventInfo info)
@@ -38,9 +55,9 @@ namespace TeamBalancer
             // check if player is valid
             if (player == null || !player.IsValid || player.IsBot ||
             // check if player is spectator or none (still connecting)
-            @event.Team == (byte)CsTeam.Spectator || @event.Team == (byte)CsTeam.None ||
+            @event.Team == (int)CsTeam.Spectator || @event.Team == (int)CsTeam.None ||
             // check if halftime and ignore
-            (_halfTime && @event.Oldteam != (byte)CsTeam.Spectator && @event.Oldteam != (byte)CsTeam.None))
+            (_halfTime && @event.Oldteam != (int)CsTeam.Spectator && @event.Oldteam != (int)CsTeam.None))
                 return HookResult.Continue;
 
             // Get initial data
@@ -49,33 +66,29 @@ namespace TeamBalancer
             var (countT, countCT) = CountActivePlayers();
 
             // Adjust player counts based on old team
-            if (@event.Oldteam == (byte)CsTeam.Terrorist) countT--;
-            else if (@event.Oldteam == (byte)CsTeam.CounterTerrorist) countCT--;
+            if (@event.Oldteam == (int)CsTeam.Terrorist) countT--;
+            else if (@event.Oldteam == (int)CsTeam.CounterTerrorist) countCT--;
 
             // Determine if player should switch teams
-            if (@event.Team != (byte)CsTeam.Terrorist
-                && ShouldSwitchToTeam(@event.Team, CsTeam.Terrorist, countCT, countT, scoreT, scoreCT))
+            if (!IsAllowedToSwitchToTeam(countT, countCT, scoreT, scoreCT))
             {
-                SwitchPlayerTeam(player, CsTeam.CounterTerrorist);
+                if (@event.Team != (int)CsTeam.CounterTerrorist) SwitchPlayerTeam(player, CsTeam.CounterTerrorist);
             }
-            else if (@event.Team != (byte)CsTeam.CounterTerrorist
-                && ShouldSwitchToTeam(@event.Team, CsTeam.CounterTerrorist, countT, countCT, scoreCT, scoreT))
+            else if (!IsAllowedToSwitchToTeam(countCT, countT, scoreCT, scoreT))
             {
-                SwitchPlayerTeam(player, CsTeam.Terrorist);
+                if (@event.Team != (int)CsTeam.Terrorist) SwitchPlayerTeam(player, CsTeam.Terrorist);
             }
-
             return HookResult.Continue;
         }
 
-        private bool ShouldSwitchToTeam(int currentTeam, CsTeam targetTeam, int targetCount, int sourceCount, int sourceScore, int targetScore)
+        private bool IsAllowedToSwitchToTeam(int targetCount, int sourceCount, int sourceScore, int targetScore)
         {
             // Rule 1: Ensure teams are balanced in terms of player count
-            if (targetCount > sourceCount + 1)
+            if (targetCount >= sourceCount + Config.MaxPlayerDifference)
                 return false;
             // Rule 2: Enforce joining the team with less score if the score difference is at least 2
-            if (sourceScore - targetScore >= Config.MinScoreDifference && currentTeam != (byte)targetTeam)
+            if (sourceScore - targetScore >= Config.MinScoreDifference)
                 return false;
-
             return true;
         }
 
@@ -83,10 +96,12 @@ namespace TeamBalancer
         {
             Server.NextFrame(() =>
             {
-                if (player == null || !player.IsValid) return;
-                player.ChangeTeam(newTeam);
-                var tmpEvent = new EventNextlevelChanged(true);
-                tmpEvent.FireEvent(false);
+                // needs double nextframe to allow player gui to update properly
+                Server.NextFrame(() =>
+                {
+                    if (player == null || !player.IsValid) return;
+                    player.ChangeTeam(newTeam);
+                });
             });
             // get team
             string team = "";

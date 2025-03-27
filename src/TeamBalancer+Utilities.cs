@@ -19,9 +19,8 @@ namespace TeamBalancer
         {
             int count_t = 0;
             int count_ct = 0;
-            foreach (CCSPlayerController player in Utilities.GetPlayers())
+            foreach (CCSPlayerController player in Utilities.GetPlayers().Where(p => !p.IsBot || !Config.IgnoreBots))
             {
-                if (player.IsBot) continue;
                 if (player.Team == CsTeam.CounterTerrorist)
                 {
                     count_ct++;

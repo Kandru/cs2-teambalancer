@@ -101,7 +101,7 @@ namespace TeamBalancer
             if (targetCount >= sourceCount + Config.MaxPlayerDifference)
                 return false;
             // Rule 2: Enforce joining the team with less score if the score difference is at least 2
-            if (sourceScore - targetScore >= Config.MinScoreDifference)
+            if (targetScore - sourceScore >= Config.MinScoreDifference)
                 return false;
             return true;
         }

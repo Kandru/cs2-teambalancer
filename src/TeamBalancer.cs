@@ -95,7 +95,7 @@ namespace TeamBalancer
                 Server.ExecuteCommand($"mp_limitteams 99");
         }
 
-        private bool IsAllowedToSwitchToTeam(int targetCount, int sourceCount, int sourceScore, int targetScore)
+        private bool IsAllowedToSwitchToTeam(int targetCount, int sourceCount, int targetScore, int sourceScore)
         {
             // Rule 1: Ensure teams are balanced in terms of player count
             if (targetCount >= sourceCount + Config.MaxPlayerDifference)

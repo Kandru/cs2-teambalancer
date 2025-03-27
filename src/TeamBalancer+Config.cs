@@ -9,6 +9,8 @@ namespace TeamBalancer
     {
         // disable update checks completely
         [JsonPropertyName("enabled")] public bool Enabled { get; set; } = true;
+        // minimum score difference to switch teams
+        [JsonPropertyName("min_score_difference")] public int MinScoreDifference { get; set; } = 1;
     }
 
     public partial class TeamBalancer : BasePlugin, IPluginConfig<PluginConfig>

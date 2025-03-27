@@ -34,66 +34,70 @@ namespace TeamBalancer
 
         public HookResult OnPlayerTeam(EventPlayerTeam @event, GameEventInfo info)
         {
-            var player = @event.Userid;
-            if (player == null
-                || !player.IsValid
-                || player.IsBot
-                || @event.Team == (byte)CsTeam.Spectator
-                || @event.Team == (byte)CsTeam.None
-                || (_halfTime == true && @event.Oldteam != (byte)CsTeam.Spectator && @event.Oldteam != (byte)CsTeam.None)) return HookResult.Continue;
-            // get initial data
-            int score_t = GetTeamScore(CsTeam.Terrorist);
-            int score_ct = GetTeamScore(CsTeam.CounterTerrorist);
-            var (count_t, count_ct) = CountActivePlayers();
-            // substract counter depending on team to match current players per team (because this is a Hook)
-            if (@event.Oldteam == (byte)CsTeam.Terrorist)
+            CCSPlayerController? player = @event.Userid;
+            // check if player is valid
+            if (player == null || !player.IsValid || player.IsBot ||
+            // check if player is spectator or none (still connecting)
+            @event.Team == (byte)CsTeam.Spectator || @event.Team == (byte)CsTeam.None ||
+            // check if halftime and ignore
+            (_halfTime && @event.Oldteam != (byte)CsTeam.Spectator && @event.Oldteam != (byte)CsTeam.None))
+                return HookResult.Continue;
+
+            // Get initial data
+            int scoreT = GetTeamScore(CsTeam.Terrorist);
+            int scoreCT = GetTeamScore(CsTeam.CounterTerrorist);
+            var (countT, countCT) = CountActivePlayers();
+
+            // Adjust player counts based on old team
+            if (@event.Oldteam == (byte)CsTeam.Terrorist) countT--;
+            else if (@event.Oldteam == (byte)CsTeam.CounterTerrorist) countCT--;
+
+            // Determine if player should switch teams
+            if (@event.Team != (byte)CsTeam.Terrorist
+                && ShouldSwitchToTeam(@event.Team, CsTeam.Terrorist, countCT, countT, scoreT, scoreCT))
             {
-                count_t -= 1;
+                SwitchPlayerTeam(player, CsTeam.CounterTerrorist);
             }
-            else if (@event.Oldteam == (byte)CsTeam.CounterTerrorist)
+            else if (@event.Team != (byte)CsTeam.CounterTerrorist
+                && ShouldSwitchToTeam(@event.Team, CsTeam.CounterTerrorist, countT, countCT, scoreCT, scoreT))
             {
-                count_ct -= 1;
+                SwitchPlayerTeam(player, CsTeam.Terrorist);
             }
-            // check if player should be switched to CT (if T) or vice versa
-            if (@event.Team == (byte)CsTeam.Terrorist
-                && count_ct <= count_t
-                && score_t - score_ct >= 2)
-            {
-                Server.NextFrame(() =>
-                {
-                    if (player == null || !player.IsValid) return;
-                    player.ChangeTeam(CsTeam.CounterTerrorist);
-                    var @tmpEvent = new EventNextlevelChanged(true);
-                    @tmpEvent.FireEvent(false);
-                });
-                // inform players
-                player.PrintToCenterAlert(Localizer["switch.to_ct_center"].Value
-                    .Replace("{player}", player.PlayerName));
-                SendGlobalChatMessage(Localizer["switch.to_ct_chat"].Value
-                    .Replace("{player}", player.PlayerName));
-                // update scoreboard
-            }
-            else if (@event.Team == (byte)CsTeam.CounterTerrorist
-                        && count_t <= count_ct
-                        && score_ct - score_t >= 2)
-            {
-                Server.NextFrame(() =>
-                {
-                    if (player == null || !player.IsValid) return;
-                    player.ChangeTeam(CsTeam.Terrorist);
-                    var @tmpEvent = new EventNextlevelChanged(true);
-                    @tmpEvent.FireEvent(false);
-                });
-                // inform players
-                player.PrintToCenterAlert(Localizer["switch.to_t_center"].Value
-                    .Replace("{player}", player.PlayerName));
-                SendGlobalChatMessage(Localizer["switch.to_t_chat"].Value
-                    .Replace("{player}", player.PlayerName));
-                // update scoreboard
-                var @tmpEvent = new EventNextlevelChanged(true);
-                @tmpEvent.FireEvent(false);
-            }
+
             return HookResult.Continue;
+        }
+
+        private bool ShouldSwitchToTeam(int currentTeam, CsTeam targetTeam, int targetCount, int sourceCount, int sourceScore, int targetScore)
+        {
+            // Rule 1: Ensure teams are balanced in terms of player count
+            if (targetCount > sourceCount + 1)
+                return false;
+            // Rule 2: Enforce joining the team with less score if the score difference is at least 2
+            if (sourceScore - targetScore >= Config.MinScoreDifference && currentTeam != (byte)targetTeam)
+                return false;
+
+            return true;
+        }
+
+        private void SwitchPlayerTeam(CCSPlayerController player, CsTeam newTeam)
+        {
+            Server.NextFrame(() =>
+            {
+                if (player == null || !player.IsValid) return;
+                player.ChangeTeam(newTeam);
+                var tmpEvent = new EventNextlevelChanged(true);
+                tmpEvent.FireEvent(false);
+            });
+            // get team
+            string team = "";
+            if (newTeam == CsTeam.Terrorist)
+                team = "t";
+            else if (newTeam == CsTeam.CounterTerrorist)
+                team = "ct";
+            // Inform player
+            player.PrintToCenterAlert(Localizer[$"switch.to_{team}_center"].Value.Replace("{player}", player.PlayerName));
+            // Inform other players
+            SendGlobalChatMessage(Localizer[$"switch.to_{team}_chat"].Value.Replace("{player}", player.PlayerName));
         }
 
         public HookResult OnAnnouncePhaseEnd(EventAnnouncePhaseEnd @event, GameEventInfo info)

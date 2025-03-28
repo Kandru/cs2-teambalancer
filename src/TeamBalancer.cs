@@ -72,14 +72,15 @@ namespace TeamBalancer
             if (@event.Oldteam == (int)CsTeam.Terrorist) countT--;
             else if (@event.Oldteam == (int)CsTeam.CounterTerrorist) countCT--;
 
-            // Determine if player should switch teams
-            if (!IsAllowedToSwitchToTeam(countT, countCT, scoreT, scoreCT))
+            if (@event.Team == (int)CsTeam.Terrorist
+                && !IsAllowedToSwitchToTeam(countT, countCT, scoreT, scoreCT))
             {
-                if (@event.Team != (int)CsTeam.CounterTerrorist) SwitchPlayerTeam(player, CsTeam.CounterTerrorist);
+                SwitchPlayerTeam(player, CsTeam.CounterTerrorist);
             }
-            else if (!IsAllowedToSwitchToTeam(countCT, countT, scoreCT, scoreT))
+            else if (@event.Team == (int)CsTeam.CounterTerrorist
+                && !IsAllowedToSwitchToTeam(countCT, countT, scoreCT, scoreT))
             {
-                if (@event.Team != (int)CsTeam.Terrorist) SwitchPlayerTeam(player, CsTeam.Terrorist);
+                SwitchPlayerTeam(player, CsTeam.Terrorist);
             }
             return HookResult.Continue;
         }
@@ -101,7 +102,8 @@ namespace TeamBalancer
             if (targetCount >= sourceCount + Config.MaxPlayerDifference)
                 return false;
             // Rule 2: Enforce joining the team with less score if the score difference is at least 2
-            if (targetScore - sourceScore >= Config.MinScoreDifference)
+            if (targetScore - sourceScore >= Config.MinScoreDifference // check if new team score is higher than old team score
+                && targetCount > sourceCount - Config.MaxPlayerDifference) // check if new team has less players than old team
                 return false;
             return true;
         }

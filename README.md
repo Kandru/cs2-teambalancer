@@ -11,7 +11,7 @@ TODO
 ## Installation
 
 1. Download and extract the latest release from the [GitHub releases page](https://github.com/Kandru/cs2-teambalancer/releases/).
-2. Move the "TeamBalancer" folder to the `/addons/counterstrikesharp/configs/plugins/` directory.
+2. Move the "TeamBalancer" folder to the `/addons/counterstrikesharp/plugins/` directory.
 3. Restart the server.
 
 Updating is even easier: simply overwrite all plugin files and they will be reloaded automatically.

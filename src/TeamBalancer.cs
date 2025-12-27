@@ -56,7 +56,7 @@ namespace TeamBalancer
         {
             CCSPlayerController? player = @event.Userid;
             // check if player is valid
-            if (player == null || !player.IsValid || player.IsBot ||
+            if (player == null || !player.IsValid || player.IsBot || player.IsHLTV ||
             // check if player is spectator or none (still connecting)
             @event.Team == (int)CsTeam.Spectator || @event.Team == (int)CsTeam.None ||
             // check if halftime and ignore

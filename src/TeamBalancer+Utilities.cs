@@ -10,7 +10,7 @@ namespace TeamBalancer
         {
             foreach (CCSPlayerController player in Utilities.GetPlayers())
             {
-                if (player.IsBot) continue;
+                if (player.IsBot || player.IsHLTV) continue;
                 AddTimer(delay, () => player.PrintToChat(message));
             }
         }
@@ -19,7 +19,7 @@ namespace TeamBalancer
         {
             int count_t = 0;
             int count_ct = 0;
-            foreach (CCSPlayerController player in Utilities.GetPlayers().Where(p => !p.IsBot || !Config.IgnoreBots))
+            foreach (CCSPlayerController player in Utilities.GetPlayers().Where(p => (!p.IsBot || !Config.IgnoreBots) && !p.IsHLTV))
             {
                 if (player.Team == CsTeam.CounterTerrorist)
                 {

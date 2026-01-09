@@ -4,6 +4,6 @@ namespace TeamBalancer
 {
     public partial class TeamBalancer : BasePlugin
     {
-        public override string ModuleVersion => "25.12.1";
+        public override string ModuleVersion => "26.01.1";
     }
 }

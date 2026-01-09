@@ -11,7 +11,7 @@ namespace TeamBalancer
         public override string ModuleName => "Team Balancer";
         public override string ModuleAuthor => "Jon-Mailes Graeffe <mail@jonni.it> / Kalle <kalle@kandru.de>";
 
-        private bool _halfTime = false;
+        private bool _halfTime;
 
         public override void Load(bool hotReload)
         {
@@ -22,6 +22,7 @@ namespace TeamBalancer
             RegisterListener<Listeners.OnServerHibernationUpdate>(OnServerHibernationUpdate);
             RegisterEventHandler<EventPlayerTeam>(OnPlayerTeam);
             RegisterEventHandler<EventAnnouncePhaseEnd>(OnAnnouncePhaseEnd);
+            RegisterEventHandler<EventWarmupEnd>(OnWarmupEnd);
             // print message if hot reload
             if (hotReload)
             {
@@ -36,19 +37,20 @@ namespace TeamBalancer
             RemoveListener<Listeners.OnServerHibernationUpdate>(OnServerHibernationUpdate);
             DeregisterEventHandler<EventPlayerTeam>(OnPlayerTeam);
             DeregisterEventHandler<EventAnnouncePhaseEnd>(OnAnnouncePhaseEnd);
+            DeregisterEventHandler<EventWarmupEnd>(OnWarmupEnd);
             Console.WriteLine(Localizer["core.unload"]);
         }
 
         public void OnMapStart(string mapName)
         {
-            AddTimer(3f, () => SetServerCvars());
+            _ = AddTimer(3f, SetServerCvars);
         }
 
         public void OnServerHibernationUpdate(bool hibernating)
         {
             if (!hibernating)
             {
-                AddTimer(3f, () => SetServerCvars());
+                _ = AddTimer(3f, SetServerCvars);
             }
         }
 
@@ -63,16 +65,24 @@ namespace TeamBalancer
             @event.Team == (int)CsTeam.Spectator || @event.Team == (int)CsTeam.None ||
             // check if halftime and ignore
             (_halfTime && @event.Oldteam != (int)CsTeam.Spectator && @event.Oldteam != (int)CsTeam.None))
+            {
                 return HookResult.Continue;
+            }
 
             // Get initial data
             int scoreT = GetTeamScore(CsTeam.Terrorist);
             int scoreCT = GetTeamScore(CsTeam.CounterTerrorist);
-            var (countT, countCT) = CountActivePlayers();
+            (int countT, int countCT) = CountActivePlayers();
 
             // Adjust player counts based on old team
-            if (@event.Oldteam == (int)CsTeam.Terrorist) countT--;
-            else if (@event.Oldteam == (int)CsTeam.CounterTerrorist) countCT--;
+            if (@event.Oldteam == (int)CsTeam.Terrorist)
+            {
+                countT--;
+            }
+            else if (@event.Oldteam == (int)CsTeam.CounterTerrorist)
+            {
+                countCT--;
+            }
 
             if (@event.Team == (int)CsTeam.Terrorist
                 && !IsAllowedToSwitchToTeam(countT, countCT, scoreT, scoreCT))
@@ -87,26 +97,38 @@ namespace TeamBalancer
             return HookResult.Continue;
         }
 
-        private void SetServerCvars()
+        private static void SetServerCvars()
         {
             // disable autoteambalance to make this plugin work
             Server.ExecuteCommand("mp_autoteambalance 0");
-            // disable limitteams by taking into account the bot change behaviour when value = 0
-            if (Config.IgnoreBots)
-                Server.ExecuteCommand($"mp_limitteams 0");
-            else
-                Server.ExecuteCommand($"mp_limitteams 99");
+            // always disable limitteams to allow teambalancer to handle all player switches correctly
+            Server.ExecuteCommand("mp_limitteams 0");
         }
 
         private bool IsAllowedToSwitchToTeam(int targetCount, int sourceCount, int targetScore, int sourceScore)
         {
-            // Rule 1: Ensure teams are balanced in terms of player count
-            if (targetCount >= sourceCount + Config.MaxPlayerDifference)
+            int playerCountDifference = targetCount - sourceCount;
+
+            // Priority 1: Enforce player count balance
+            // Block if target team already has MaxPlayerDifference or more players than source team
+            if (playerCountDifference >= Config.MaxPlayerDifference)
+            {
                 return false;
-            // Rule 2: Enforce joining the team with less score if the score difference is at least 2
-            if (targetScore - sourceScore >= Config.MinScoreDifference // check if new team score is higher than old team score
-                && targetCount > sourceCount - Config.MaxPlayerDifference) // check if new team has less players than old team
-                return false;
+            }
+
+            // Priority 2: Enforce score balance when player counts are within acceptable range
+            // Only apply score check when teams are relatively balanced in player count
+            if (Math.Abs(playerCountDifference) < Config.MaxPlayerDifference)
+            {
+                int scoreLeadOfTargetTeam = targetScore - sourceScore;
+                // Block if trying to join team with significantly higher score
+                if (scoreLeadOfTargetTeam >= Config.MinScoreDifference)
+                {
+                    return false;
+                }
+            }
+
+            // Allow switch: either joining smaller team, or teams are balanced in both count and score
             return true;
         }
 
@@ -117,16 +139,24 @@ namespace TeamBalancer
                 // needs double nextframe to allow player gui to update properly
                 Server.NextFrame(() =>
                 {
-                    if (player == null || !player.IsValid) return;
+                    if (player == null || !player.IsValid)
+                    {
+                        return;
+                    }
+
                     player.ChangeTeam(newTeam);
                 });
             });
             // get team
             string team = "";
             if (newTeam == CsTeam.Terrorist)
+            {
                 team = "t";
+            }
             else if (newTeam == CsTeam.CounterTerrorist)
+            {
                 team = "ct";
+            }
             // Inform player
             player.PrintToCenterAlert(Localizer[$"switch.to_{team}_center"].Value.Replace("{player}", player.PlayerName));
             // Inform other players
@@ -139,36 +169,84 @@ namespace TeamBalancer
             // check for half time player swap and ignore teamswap
             ConVar? mpTeamIntroTime = ConVar.Find("mp_team_intro_time");
             // disable after mpTeamIntroTime finished
-            if (mpTeamIntroTime != null && mpTeamIntroTime.GetPrimitiveValue<float>() > 0.0f)
+            if (mpTeamIntroTime != null)
             {
-                mpTeamIntroTime.GetPrimitiveValue<float>();
-                // disable half time
-                AddTimer(mpTeamIntroTime.GetPrimitiveValue<float>() + 0.5f, () =>
-                {
-                    _halfTime = false;
-                });
-            }
-            else
-            {
-                ConVar? mpHalfTimeDuration = ConVar.Find("mp_halftime_duration");
-                if (mpHalfTimeDuration != null && mpHalfTimeDuration.GetPrimitiveValue<float>() > 0.0f)
+                float introTime = mpTeamIntroTime.GetPrimitiveValue<float>();
+                if (introTime > 0.0f)
                 {
                     // disable half time
-                    AddTimer(mpHalfTimeDuration.GetPrimitiveValue<float>() + 0.5f, () =>
+                    _ = AddTimer(introTime + 0.5f, () =>
                     {
                         _halfTime = false;
                     });
+                    return HookResult.Continue;
                 }
-                else
+            }
+
+            ConVar? mpHalfTimeDuration = ConVar.Find("mp_halftime_duration");
+            if (mpHalfTimeDuration != null)
+            {
+                float halfTime = mpHalfTimeDuration.GetPrimitiveValue<float>();
+                if (halfTime > 0.0f)
                 {
                     // disable half time
-                    AddTimer(1f, () =>
+                    _ = AddTimer(halfTime + 0.5f, () =>
                     {
                         _halfTime = false;
                     });
+                    return HookResult.Continue;
                 }
             }
+
+            // disable half time with default fallback
+            _ = AddTimer(1f, () =>
+            {
+                _halfTime = false;
+            });
             return HookResult.Continue;
+        }
+
+        public HookResult OnWarmupEnd(EventWarmupEnd @event, GameEventInfo info)
+        {
+            if (!Config.ScrambleTeamsAfterWarmup)
+            {
+                return HookResult.Continue;
+            }
+            ScrambleTeams();
+            return HookResult.Continue;
+        }
+
+        private static void ScrambleTeams()
+        {
+            List<CCSPlayerController> players = [.. Utilities.GetPlayers().Where(static p => p.IsValid && !p.IsBot && !p.IsHLTV && (p.Team == CsTeam.Terrorist || p.Team == CsTeam.CounterTerrorist))];
+
+            if (players.Count < 2)
+            {
+                return;
+            }
+
+            (int countT, int countCT) = CountActivePlayers();
+            int balancedCount = players.Count / 2;
+
+            List<CCSPlayerController> tPlayers = [.. players.Where(static p => p.Team == CsTeam.Terrorist)];
+            List<CCSPlayerController> ctPlayers = [.. players.Where(static p => p.Team == CsTeam.CounterTerrorist)];
+
+            if (tPlayers.Count > balancedCount)
+            {
+                int toMove = tPlayers.Count - balancedCount;
+                foreach (CCSPlayerController? player in tPlayers.Take(toMove))
+                {
+                    player.ChangeTeam(CsTeam.CounterTerrorist);
+                }
+            }
+            else if (ctPlayers.Count > balancedCount)
+            {
+                int toMove = ctPlayers.Count - balancedCount;
+                foreach (CCSPlayerController? player in ctPlayers.Take(toMove))
+                {
+                    player.ChangeTeam(CsTeam.Terrorist);
+                }
+            }
         }
     }
 }

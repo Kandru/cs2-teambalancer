@@ -1,3 +1,6 @@
+> [!TIP]
+> You can test this plug-in by joining our community server via `connect server.counterstrike.party:27030` or via https://counterstrike.party
+
 # CounterstrikeSharp - Team Balancer
 
 [![UpdateManager Compatible](https://img.shields.io/badge/CS2-UpdateManager-darkgreen)](https://github.com/Kandru/cs2-update-manager/)
@@ -6,7 +9,7 @@
 [![issues - cs2-map-modifier](https://img.shields.io/github/issues/Kandru/cs2-teambalancer)](https://github.com/Kandru/cs2-teambalancer/issues)
 [![](https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif)](https://www.paypal.com/donate/?hosted_button_id=C2AVYKGVP9TRG)
 
-TODO
+Simple team balancer for Counter Strike 2. Fits my needs and balances the teams. Will balance towards the team with less score and players.
 
 ## Installation
 
@@ -15,10 +18,6 @@ TODO
 3. Restart the server.
 
 Updating is even easier: simply overwrite all plugin files and they will be reloaded automatically.
-
-## Commands
-
-TODO
 
 ## Configuration
 

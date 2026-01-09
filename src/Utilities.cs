@@ -10,16 +10,20 @@ namespace TeamBalancer
         {
             foreach (CCSPlayerController player in Utilities.GetPlayers())
             {
-                if (player.IsBot || player.IsHLTV) continue;
-                AddTimer(delay, () => player.PrintToChat(message));
+                if (player.IsBot || player.IsHLTV)
+                {
+                    continue;
+                }
+
+                _ = AddTimer(delay, () => player.PrintToChat(message));
             }
         }
 
-        public Tuple<int, int> CountActivePlayers()
+        public static Tuple<int, int> CountActivePlayers()
         {
             int count_t = 0;
             int count_ct = 0;
-            foreach (CCSPlayerController player in Utilities.GetPlayers().Where(p => (!p.IsBot || !Config.IgnoreBots) && !p.IsHLTV))
+            foreach (CCSPlayerController player in Utilities.GetPlayers().Where(static p => !p.IsBot && !p.IsHLTV))
             {
                 if (player.Team == CsTeam.CounterTerrorist)
                 {
@@ -33,11 +37,11 @@ namespace TeamBalancer
             return Tuple.Create(count_t, count_ct);
         }
 
-        public int GetTeamScore(CsTeam team)
+        public static int GetTeamScore(CsTeam team)
         {
-            var teamManagers = Utilities.FindAllEntitiesByDesignerName<CCSTeam>("cs_team_manager");
+            IEnumerable<CCSTeam> teamManagers = Utilities.FindAllEntitiesByDesignerName<CCSTeam>("cs_team_manager");
 
-            foreach (var teamManager in teamManagers)
+            foreach (CCSTeam teamManager in teamManagers)
             {
                 if ((int)team == teamManager.TeamNum)
                 {
